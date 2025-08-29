@@ -1,239 +1,97 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PWA Demo</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="icon" type="image/png" href="icon.png" />
+<!-- Updated app.js -->
+let db;
 
-  <!-- Google Fonts for modern look -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+// Initialize SQLite
+initSqlJs({
+  locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+}).then(SQL => {
+  db = new SQL.Database();
+  db.run("CREATE TABLE IF NOT EXISTS items (id INTEGER PRIMARY KEY, name TEXT);");
 
-  <!-- Leaflet CSS for map -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  document.getElementById("insertBtn").onclick = () => {
+    const value = "Item " + Date.now();
+    db.run("INSERT INTO items (name) VALUES (?)", [value]);
+    showPopup(`Inserted: ${value}`);
+  };
 
-  <style>
-    /* General styling */
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f4f7fb;
-      margin: 0;
-      padding: 0;
-      color: #333;
+  document.getElementById("queryBtn").onclick = () => {
+    const res = db.exec("SELECT * FROM items");
+    const outputEl = document.getElementById("outputList");
+    outputEl.innerHTML = "";
+
+    if (res.length === 0 || res[0].values.length === 0) {
+      outputEl.innerHTML = `<div class="output-list-item">No rows found.</div>`;
+      return;
     }
 
-    h1 {
-      text-align: center;
-      padding: 1em 0 0.5em;
-      color: #2196f3;
-      font-weight: 600;
-    }
+    res[0].values.forEach(row => {
+      const [id, name] = row;
+      const div = document.createElement("div");
+      div.className = "output-list-item";
+      div.textContent = `ID: ${id} | Name: ${name}`;
+      outputEl.appendChild(div);
 
-    /* Tab navigation */
-    .tabs {
-      display: flex;
-      justify-content: center;
-      background: white;
-      border-bottom: 1px solid #ddd;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-
-    .tabs button {
-      background: none;
-      border: none;
-      font-size: 1em;
-      padding: 1em 2em;
-      cursor: pointer;
-      transition: background 0.3s;
-      font-weight: 500;
-      color: #555;
-    }
-
-    .tabs button:hover,
-    .tabs button.active-tab {
-      background-color: #e3f2fd;
-      color: #1976d2;
-    }
-
-    /* Tab content */
-    .tab {
-      display: none;
-      padding: 1.5em;
-      max-width: 900px;
-      margin: auto;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-      margin-top: 1em;
-    }
-
-    .tab.active {
-      display: block;
-    }
-
-    button {
-      padding: 10px 16px;
-      margin: 8px 4px;
-      border: none;
-      border-radius: 4px;
-      background-color: #2196f3;
-      color: white;
-      font-size: 0.95em;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #1976d2;
-    }
-
-    #map {
-      height: 400px;
-      width: 100%;
-      margin-bottom: 1em;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-
-    .photos {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 1em;
-    }
-
-    .photos img {
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      max-height: 120px;
-    }
-
-    pre {
-      background: #f1f1f1;
-      padding: 1em;
-      border-radius: 6px;
-      overflow-x: auto;
-    }
-
-    video {
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      max-width: 100%;
-    }
-  </style>
-</head>
-<body>
-  <h1>PWA Demo</h1>
-
-  <!-- Navigation tabs -->
-  <div class="tabs">
-    <button onclick="showTab('sqliteTab')" class="active-tab">SQLite</button>
-    <button onclick="showTab('mapTab')">Map</button>
-    <button onclick="showTab('cameraTab')">Camera</button>
-  </div>
-
-  <!-- SQLite Tab -->
-  <div class="tab active" id="sqliteTab">
-    <button id="insertBtn">Insert Row</button>
-    <button id="queryBtn">Query Rows</button>
-    <pre id="output"></pre>
-  </div>
-
-  <!-- Map Tab -->
-  <div class="tab" id="mapTab">
-    <h2>Map</h2>
-    <div id="map"></div>
-    <button onclick="getLocation()">Locate Me</button>
-  </div>
-
-  <!-- Camera Tab -->
-  <div class="tab" id="cameraTab">
-    <h2>Camera</h2>
-    <video id="camera" autoplay playsinline></video>
-    <br />
-    <button onclick="takePhoto()">Take Photo</button>
-    <div class="photos" id="photoGallery"></div>
-  </div>
-
-  <!-- Dependencies -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="app.js"></script>
-
-  <script>
-    // Register service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js');
-    }
-
-    // Camera control variables
-    let cameraStarted = false;
-    let cameraStream = null;
-
-    // Tab switching function
-    function showTab(id) {
-      // Hide all tabs and deactivate buttons
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active-tab'));
-
-      // Activate selected tab and button
-      document.getElementById(id).classList.add('active');
-      const index = ["sqliteTab", "mapTab", "cameraTab"].indexOf(id);
-      document.querySelectorAll('.tabs button')[index].classList.add('active-tab');
-
-      // If Map tab is activated
-      if (id === 'mapTab') {
-        if (window.map) {
-          setTimeout(() => map.invalidateSize(), 200);
-        }
-        getLocation(); // Auto-locate
-      }
-
-      // If Camera tab is activated
-      if (id === 'cameraTab') {
-        if (!cameraStarted) startCamera();
-      } else {
-        stopCamera(); // turn off camera when leaving tab
-      }
-    }
-
-    // Start camera stream
-    function startCamera() {
-      const video = document.getElementById("camera");
-      navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-        video.srcObject = stream;
-        cameraStream = stream;
-        cameraStarted = true;
-      }).catch(err => {
-        console.error("Camera error: ", err);
+      // Tap
+      div.addEventListener("click", () => {
+        showPopup(`Tapped on: ${name}`);
       });
-    }
 
-    // Stop camera stream
-    function stopCamera() {
-      if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop());
-        cameraStarted = false;
-        cameraStream = null;
-      }
-    }
+      // Long press
+      let pressTimer;
+      div.addEventListener("mousedown", () => {
+        pressTimer = setTimeout(() => showPopup(`Long pressed: ${name}`), 600);
+      });
+      div.addEventListener("mouseup", () => clearTimeout(pressTimer));
+      div.addEventListener("mouseleave", () => clearTimeout(pressTimer));
+      div.addEventListener("touchstart", () => {
+        pressTimer = setTimeout(() => showPopup(`Long pressed: ${name}`), 600);
+      });
+      div.addEventListener("touchend", () => clearTimeout(pressTimer));
 
-    // Take photo and show in gallery
-    function takePhoto() {
-      const video = document.getElementById("camera");
-      const gallery = document.getElementById("photoGallery");
+      // Swipe left
+      let touchStartX = null;
+      div.addEventListener("touchstart", e => {
+        touchStartX = e.changedTouches[0].screenX;
+      });
+      div.addEventListener("touchend", e => {
+        if (touchStartX !== null) {
+          const diff = touchStartX - e.changedTouches[0].screenX;
+          if (diff > 80) {
+            showPopup(`Deleted (simulated): ${name}`);
+          }
+          touchStartX = null;
+        }
+      });
+    });
+  };
+});
 
-      const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+// Leaflet map setup
+let map;
+function initMap(lat, lng) {
+  if (map) {
+    map.setView([lat, lng], 13);
+    setTimeout(() => map.invalidateSize(), 200);
+    return;
+  }
+  map = L.map("map").setView([lat, lng], 13);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  }).addTo(map);
+  L.marker([lat, lng]).addTo(map)
+    .bindPopup("You are here!")
+    .openPopup();
+  setTimeout(() => map.invalidateSize(), 200);
+}
 
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      const img = document.createElement("img");
-      img.src = canvas.toDataURL("image/png");
-      gallery.appendChild(img);
-    }
-  </script>
-</body>
-</html>
+// Geolocation
+function getLocation() {
+  if (!navigator.geolocation) {
+    alert("Geolocation is not supported by your browser.");
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    position => initMap(position.coords.latitude, position.coords.longitude),
+    () => alert("Unable to retrieve your location.")
+  );
+}
