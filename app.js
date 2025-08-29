@@ -10,37 +10,76 @@ initSqlJs({
   document.getElementById("insertBtn").onclick = () => {
     const value = "Item " + Date.now();
     db.run("INSERT INTO items (name) VALUES (?)", [value]);
-    document.getElementById("output").textContent = `Inserted: ${value}`;
+    showPopup(`Inserted: ${value}`);
   };
 
   document.getElementById("queryBtn").onclick = () => {
     const res = db.exec("SELECT * FROM items");
-    document.getElementById("output").textContent =
-      res.length ? JSON.stringify(res[0].values, null, 2) : "No rows yet";
+    const outputEl = document.getElementById("outputList");
+    outputEl.innerHTML = "";
+
+    if (res.length === 0 || res[0].values.length === 0) {
+      outputEl.innerHTML = `<div class="output-list-item">No rows found.</div>`;
+      return;
+    }
+
+    res[0].values.forEach(row => {
+      const [id, name] = row;
+      const div = document.createElement("div");
+      div.className = "output-list-item";
+      div.textContent = `ID: ${id} | Name: ${name}`;
+      outputEl.appendChild(div);
+
+      // Tap
+      div.addEventListener("click", () => {
+        showPopup(`Tapped on: ${name}`);
+      });
+
+      // Long press
+      let pressTimer;
+      div.addEventListener("mousedown", () => {
+        pressTimer = setTimeout(() => showPopup(`Long pressed: ${name}`), 600);
+      });
+      div.addEventListener("mouseup", () => clearTimeout(pressTimer));
+      div.addEventListener("mouseleave", () => clearTimeout(pressTimer));
+      div.addEventListener("touchstart", () => {
+        pressTimer = setTimeout(() => showPopup(`Long pressed: ${name}`), 600);
+      });
+      div.addEventListener("touchend", () => clearTimeout(pressTimer));
+
+      // Swipe left
+      let touchStartX = null;
+      div.addEventListener("touchstart", e => {
+        touchStartX = e.changedTouches[0].screenX;
+      });
+      div.addEventListener("touchend", e => {
+        if (touchStartX !== null) {
+          const diff = touchStartX - e.changedTouches[0].screenX;
+          if (diff > 80) {
+            showPopup(`Deleted (simulated): ${name}`);
+          }
+          touchStartX = null;
+        }
+      });
+    });
   };
 });
 
-// Leaflet map logic
+// Leaflet map setup
 let map;
-
 function initMap(lat, lng) {
   if (map) {
     map.setView([lat, lng], 13);
     setTimeout(() => map.invalidateSize(), 200);
     return;
   }
-
   map = L.map("map").setView([lat, lng], 13);
-
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   }).addTo(map);
-
   L.marker([lat, lng]).addTo(map)
     .bindPopup("You are here!")
     .openPopup();
-
   setTimeout(() => map.invalidateSize(), 200);
 }
 
@@ -50,15 +89,21 @@ function getLocation() {
     alert("Geolocation is not supported by your browser.");
     return;
   }
-
   navigator.geolocation.getCurrentPosition(
-    (position) => {
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
-      initMap(lat, lng);
-    },
-    () => {
-      alert("Unable to retrieve your location.");
-    }
+    position => initMap(position.coords.latitude, position.coords.longitude),
+    () => alert("Unable to retrieve your location.")
   );
+}
+
+// Popup toast function
+function showPopup(message) {
+  const toast = document.getElementById("popupToast");
+  if (!toast) return;
+  toast.textContent = message;
+  toast.style.display = "block";
+  toast.style.opacity = 1;
+  setTimeout(() => {
+    toast.style.opacity = 0;
+    setTimeout(() => (toast.style.display = "none"), 300);
+  }, 2000);
 }
