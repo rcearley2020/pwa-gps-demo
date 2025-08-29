@@ -3,36 +3,75 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PWA GPS Demo</title>
+  <title>PWA GPS + Camera + SQLite Demo</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" href="icon.png" />
 
-  <!-- Leaflet CSS -->
+  <!-- Leaflet CSS for Map -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   />
+
+  <style>
+    .tab { display: none; padding: 1em; }
+    .tab.active { display: block; }
+    .tabs button {
+      margin: 0 5px;
+      padding: 10px;
+    }
+    #map { height: 400px; width: 100%; }
+    .photos img {
+      max-height: 120px;
+      margin: 5px;
+    }
+  </style>
 </head>
 <body>
-  <h1>PWA + GPS Demo</h1>
-  <button id="insertBtn">Insert Row</button>
-  <button id="queryBtn">Query Rows</button>
-  <pre id="output"></pre>
+  <h1>PWA Demo</h1>
 
-  <h2>Map</h2>
-  <div id="map" style="height: 400px; width: 100%;"></div>
-  <button onclick="getLocation()">Locate Me</button>
+  <div class="tabs">
+    <button onclick="showTab('sqliteTab')">SQLite</button>
+    <button onclick="showTab('mapTab')">Map</button>
+    <button onclick="showTab('cameraTab')">Camera</button>
+  </div>
 
-  <!-- SQL.js -->
+  <!-- Tab 1: SQLite -->
+  <div class="tab active" id="sqliteTab">
+    <button id="insertBtn">Insert Row</button>
+    <button id="queryBtn">Query Rows</button>
+    <pre id="output"></pre>
+  </div>
+
+  <!-- Tab 2: Map -->
+  <div class="tab" id="mapTab">
+    <h2>Map</h2>
+    <div id="map"></div>
+    <button onclick="getLocation()">Locate Me</button>
+  </div>
+
+  <!-- Tab 3: Camera -->
+  <div class="tab" id="cameraTab">
+    <h2>Camera</h2>
+    <video id="camera" autoplay playsinline width="100%" height="auto"></video>
+    <br />
+    <button onclick="takePhoto()">Take Photo</button>
+    <div class="photos" id="photoGallery"></div>
+  </div>
+
+  <!-- JS Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
-  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <!-- App Logic -->
   <script src="app.js"></script>
 
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js');
+    }
+
+    function showTab(id) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
     }
   </script>
 </body>
