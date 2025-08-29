@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -7,13 +7,14 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" href="icon.png" />
 
-  <!-- Google Fonts -->
+  <!-- Google Fonts for clean typography -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
 
-  <!-- Leaflet CSS -->
+  <!-- Leaflet CSS for map rendering -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
+    /* General body styling */
     body {
       font-family: 'Inter', sans-serif;
       background-color: #f4f7fb;
@@ -29,6 +30,7 @@
       font-weight: 600;
     }
 
+    /* Tabs menu at the top */
     .tabs {
       display: flex;
       justify-content: center;
@@ -54,6 +56,7 @@
       color: #1976d2;
     }
 
+    /* Tab content containers */
     .tab {
       display: none;
       padding: 1.5em;
@@ -69,6 +72,7 @@
       display: block;
     }
 
+    /* Button styles */
     button {
       padding: 10px 16px;
       margin: 8px 4px;
@@ -84,6 +88,7 @@
       background-color: #1976d2;
     }
 
+    /* Map container */
     #map {
       height: 400px;
       width: 100%;
@@ -92,6 +97,7 @@
       border-radius: 6px;
     }
 
+    /* Photo gallery container */
     .photos {
       display: flex;
       flex-wrap: wrap;
@@ -122,27 +128,28 @@
 <body>
   <h1>PWA Demo</h1>
 
+  <!-- Top tab buttons -->
   <div class="tabs">
     <button onclick="showTab('sqliteTab')" class="active-tab">SQLite</button>
     <button onclick="showTab('mapTab')">Map</button>
     <button onclick="showTab('cameraTab')">Camera</button>
   </div>
 
-  <!-- Tab 1: SQLite -->
+  <!-- SQLite tab: insert/query table rows -->
   <div class="tab active" id="sqliteTab">
     <button id="insertBtn">Insert Row</button>
     <button id="queryBtn">Query Rows</button>
     <pre id="output"></pre>
   </div>
 
-  <!-- Tab 2: Map -->
+  <!-- Map tab: display user's location -->
   <div class="tab" id="mapTab">
     <h2>Map</h2>
     <div id="map"></div>
     <button onclick="getLocation()">Locate Me</button>
   </div>
 
-  <!-- Tab 3: Camera -->
+  <!-- Camera tab: take and show photos -->
   <div class="tab" id="cameraTab">
     <h2>Camera</h2>
     <video id="camera" autoplay playsinline></video>
@@ -151,34 +158,84 @@
     <div class="photos" id="photoGallery"></div>
   </div>
 
-  <!-- Scripts -->
+  <!-- JS Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="app.js"></script>
 
   <script>
+    // Register service worker if supported
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js');
     }
 
+    let cameraStarted = false;
+    let cameraStream = null;
+
     function showTab(id) {
+      // Hide all tabs
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      // Remove highlight from all buttons
       document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active-tab'));
 
+      // Show selected tab
       document.getElementById(id).classList.add('active');
       const index = ["sqliteTab", "mapTab", "cameraTab"].indexOf(id);
       document.querySelectorAll('.tabs button')[index].classList.add('active-tab');
 
-      // Fix map rendering and trigger auto-location
+      // Handle map logic
       if (id === 'mapTab') {
         if (window.map) {
-          setTimeout(() => map.invalidateSize(), 200);
+          setTimeout(() => map.invalidateSize(), 200); // Redraw map properly
         }
-        getLocation();
+        getLocation(); // Auto-locate user
       }
+
+      // Handle camera start/stop
+      if (id === 'cameraTab') {
+        if (!cameraStarted) {
+          startCamera();
+        }
+      } else {
+        stopCamera();
+      }
+    }
+
+    function startCamera() {
+      const video = document.getElementById("camera");
+
+      navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+        video.srcObject = stream;
+        cameraStream = stream;
+        cameraStarted = true;
+      }).catch(err => {
+        console.error("Camera error: ", err);
+      });
+    }
+
+    function stopCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStarted = false;
+      }
+    }
+
+    // Capture a snapshot from the camera and add to gallery
+    function takePhoto() {
+      const video = document.getElementById("camera");
+      const gallery = document.getElementById("photoGallery");
+
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const img = document.createElement("img");
+      img.src = canvas.toDataURL("image/png");
+      gallery.appendChild(img);
     }
   </script>
 </body>
 </html>
-
-
