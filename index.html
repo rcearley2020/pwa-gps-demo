@@ -164,10 +164,21 @@
     function showTab(id) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active-tab'));
+
       document.getElementById(id).classList.add('active');
       const index = ["sqliteTab", "mapTab", "cameraTab"].indexOf(id);
       document.querySelectorAll('.tabs button')[index].classList.add('active-tab');
+
+      // Fix map rendering and trigger auto-location
+      if (id === 'mapTab') {
+        if (window.map) {
+          setTimeout(() => map.invalidateSize(), 200);
+        }
+        getLocation();
+      }
     }
   </script>
 </body>
 </html>
+
+
