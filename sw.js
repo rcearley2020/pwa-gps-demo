@@ -1,11 +1,11 @@
 const CACHE_NAME = "pwa-sqlite-cache-v1";
 const urlsToCache = [
-  "/pwa-sqlite-demo/",
-  "/pwa-sqlite-demo/index.html",
-  "/pwa-sqlite-demo/app.js",
-  "/pwa-sqlite-demo/icon-192.png",
-  "/pwa-sqlite-demo/icon-512.png",
-  "/pwa-sqlite-demo/manifest.json"
+  "/pwa-gps-demo/",
+  "/pwa-gps-demo/index.html",
+  "/pwa-gps-demo/app.js",
+  "/pwa-gps-demo/icon-192.png",
+  "/pwa-gps-demo/icon-512.png",
+  "/pwa-gps-demo/manifest.json"
 ];
 
 // Install SW and cache files
