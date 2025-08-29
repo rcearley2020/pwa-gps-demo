@@ -3,27 +3,119 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PWA GPS + Camera + SQLite Demo</title>
+  <title>PWA Demo</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" href="icon.png" />
 
-  <!-- Leaflet CSS for Map -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
-    .tab { display: none; padding: 1em; }
-    .tab.active { display: block; }
-    .tabs button {
-      margin: 0 5px;
-      padding: 10px;
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f4f7fb;
+      margin: 0;
+      padding: 0;
+      color: #333;
     }
-    #map { height: 400px; width: 100%; }
+
+    h1 {
+      text-align: center;
+      padding: 1em 0 0.5em;
+      color: #2196f3;
+      font-weight: 600;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      background: white;
+      border-bottom: 1px solid #ddd;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .tabs button {
+      background: none;
+      border: none;
+      font-size: 1em;
+      padding: 1em 2em;
+      cursor: pointer;
+      transition: background 0.3s;
+      font-weight: 500;
+      color: #555;
+    }
+
+    .tabs button:hover,
+    .tabs button.active-tab {
+      background-color: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .tab {
+      display: none;
+      padding: 1.5em;
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      margin-top: 1em;
+    }
+
+    .tab.active {
+      display: block;
+    }
+
+    button {
+      padding: 10px 16px;
+      margin: 8px 4px;
+      border: none;
+      border-radius: 4px;
+      background-color: #2196f3;
+      color: white;
+      font-size: 0.95em;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #1976d2;
+    }
+
+    #map {
+      height: 400px;
+      width: 100%;
+      margin-bottom: 1em;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .photos {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 1em;
+    }
+
     .photos img {
+      border-radius: 6px;
+      border: 1px solid #ccc;
       max-height: 120px;
-      margin: 5px;
+    }
+
+    pre {
+      background: #f1f1f1;
+      padding: 1em;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+
+    video {
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      max-width: 100%;
     }
   </style>
 </head>
@@ -31,7 +123,7 @@
   <h1>PWA Demo</h1>
 
   <div class="tabs">
-    <button onclick="showTab('sqliteTab')">SQLite</button>
+    <button onclick="showTab('sqliteTab')" class="active-tab">SQLite</button>
     <button onclick="showTab('mapTab')">Map</button>
     <button onclick="showTab('cameraTab')">Camera</button>
   </div>
@@ -53,13 +145,13 @@
   <!-- Tab 3: Camera -->
   <div class="tab" id="cameraTab">
     <h2>Camera</h2>
-    <video id="camera" autoplay playsinline width="100%" height="auto"></video>
+    <video id="camera" autoplay playsinline></video>
     <br />
     <button onclick="takePhoto()">Take Photo</button>
     <div class="photos" id="photoGallery"></div>
   </div>
 
-  <!-- JS Libraries -->
+  <!-- Scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="app.js"></script>
@@ -71,7 +163,10 @@
 
     function showTab(id) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active-tab'));
       document.getElementById(id).classList.add('active');
+      const index = ["sqliteTab", "mapTab", "cameraTab"].indexOf(id);
+      document.querySelectorAll('.tabs button')[index].classList.add('active-tab');
     }
   </script>
 </body>
