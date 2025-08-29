@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -7,14 +7,14 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" href="icon.png" />
 
-  <!-- Google Fonts for clean typography -->
+  <!-- Google Fonts for modern look -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
 
-  <!-- Leaflet CSS for map rendering -->
+  <!-- Leaflet CSS for map -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
-    /* General body styling */
+    /* General styling */
     body {
       font-family: 'Inter', sans-serif;
       background-color: #f4f7fb;
@@ -30,7 +30,7 @@
       font-weight: 600;
     }
 
-    /* Tabs menu at the top */
+    /* Tab navigation */
     .tabs {
       display: flex;
       justify-content: center;
@@ -56,7 +56,7 @@
       color: #1976d2;
     }
 
-    /* Tab content containers */
+    /* Tab content */
     .tab {
       display: none;
       padding: 1.5em;
@@ -72,7 +72,6 @@
       display: block;
     }
 
-    /* Button styles */
     button {
       padding: 10px 16px;
       margin: 8px 4px;
@@ -88,7 +87,6 @@
       background-color: #1976d2;
     }
 
-    /* Map container */
     #map {
       height: 400px;
       width: 100%;
@@ -97,7 +95,6 @@
       border-radius: 6px;
     }
 
-    /* Photo gallery container */
     .photos {
       display: flex;
       flex-wrap: wrap;
@@ -128,28 +125,28 @@
 <body>
   <h1>PWA Demo</h1>
 
-  <!-- Top tab buttons -->
+  <!-- Navigation tabs -->
   <div class="tabs">
     <button onclick="showTab('sqliteTab')" class="active-tab">SQLite</button>
     <button onclick="showTab('mapTab')">Map</button>
     <button onclick="showTab('cameraTab')">Camera</button>
   </div>
 
-  <!-- SQLite tab: insert/query table rows -->
+  <!-- SQLite Tab -->
   <div class="tab active" id="sqliteTab">
     <button id="insertBtn">Insert Row</button>
     <button id="queryBtn">Query Rows</button>
     <pre id="output"></pre>
   </div>
 
-  <!-- Map tab: display user's location -->
+  <!-- Map Tab -->
   <div class="tab" id="mapTab">
     <h2>Map</h2>
     <div id="map"></div>
     <button onclick="getLocation()">Locate Me</button>
   </div>
 
-  <!-- Camera tab: take and show photos -->
+  <!-- Camera Tab -->
   <div class="tab" id="cameraTab">
     <h2>Camera</h2>
     <video id="camera" autoplay playsinline></video>
@@ -158,52 +155,51 @@
     <div class="photos" id="photoGallery"></div>
   </div>
 
-  <!-- JS Libraries -->
+  <!-- Dependencies -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="app.js"></script>
 
   <script>
-    // Register service worker if supported
+    // Register service worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js');
     }
 
+    // Camera control variables
     let cameraStarted = false;
     let cameraStream = null;
 
+    // Tab switching function
     function showTab(id) {
-      // Hide all tabs
+      // Hide all tabs and deactivate buttons
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      // Remove highlight from all buttons
       document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active-tab'));
 
-      // Show selected tab
+      // Activate selected tab and button
       document.getElementById(id).classList.add('active');
       const index = ["sqliteTab", "mapTab", "cameraTab"].indexOf(id);
       document.querySelectorAll('.tabs button')[index].classList.add('active-tab');
 
-      // Handle map logic
+      // If Map tab is activated
       if (id === 'mapTab') {
         if (window.map) {
-          setTimeout(() => map.invalidateSize(), 200); // Redraw map properly
+          setTimeout(() => map.invalidateSize(), 200);
         }
-        getLocation(); // Auto-locate user
+        getLocation(); // Auto-locate
       }
 
-      // Handle camera start/stop
+      // If Camera tab is activated
       if (id === 'cameraTab') {
-        if (!cameraStarted) {
-          startCamera();
-        }
+        if (!cameraStarted) startCamera();
       } else {
-        stopCamera();
+        stopCamera(); // turn off camera when leaving tab
       }
     }
 
+    // Start camera stream
     function startCamera() {
       const video = document.getElementById("camera");
-
       navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
         video.srcObject = stream;
         cameraStream = stream;
@@ -213,14 +209,16 @@
       });
     }
 
+    // Stop camera stream
     function stopCamera() {
       if (cameraStream) {
         cameraStream.getTracks().forEach(track => track.stop());
         cameraStarted = false;
+        cameraStream = null;
       }
     }
 
-    // Capture a snapshot from the camera and add to gallery
+    // Take photo and show in gallery
     function takePhoto() {
       const video = document.getElementById("camera");
       const gallery = document.getElementById("photoGallery");

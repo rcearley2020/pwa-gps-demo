@@ -1,6 +1,6 @@
 let db;
 
-// SQLite
+// Initialize SQLite
 initSqlJs({
   locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
 }).then(SQL => {
@@ -20,16 +20,18 @@ initSqlJs({
   };
 });
 
-// Map
+// Leaflet map logic
 let map;
 
 function initMap(lat, lng) {
   if (map) {
     map.setView([lat, lng], 13);
+    setTimeout(() => map.invalidateSize(), 200);
     return;
   }
 
   map = L.map("map").setView([lat, lng], 13);
+
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -38,8 +40,11 @@ function initMap(lat, lng) {
   L.marker([lat, lng]).addTo(map)
     .bindPopup("You are here!")
     .openPopup();
+
+  setTimeout(() => map.invalidateSize(), 200);
 }
 
+// Geolocation
 function getLocation() {
   if (!navigator.geolocation) {
     alert("Geolocation is not supported by your browser.");
@@ -56,32 +61,4 @@ function getLocation() {
       alert("Unable to retrieve your location.");
     }
   );
-}
-
-// Auto-init map
-window.addEventListener("load", getLocation);
-
-// Camera
-const video = document.getElementById("camera");
-const gallery = document.getElementById("photoGallery");
-
-// Start camera
-navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-  video.srcObject = stream;
-}).catch(err => {
-  console.error("Camera error: ", err);
-});
-
-// Take photo
-function takePhoto() {
-  const canvas = document.createElement("canvas");
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-  const img = document.createElement("img");
-  img.src = canvas.toDataURL("image/png");
-  gallery.appendChild(img);
 }
